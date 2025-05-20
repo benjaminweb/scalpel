@@ -11,7 +11,7 @@ import Data.List (isInfixOf)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import Test.HUnit (Test(..), (@=?), (~:), runTestTT, failures)
 
-import qualified Text.HTML.TagSoup as TagSoup
+import qualified Text.HTML.Parser as HP
 import qualified Text.Regex.TDFA
 
 main :: IO ()
@@ -624,4 +624,4 @@ scrapeTest :: (Eq a, Show a)
 scrapeTest label html expected scraper = label' ~: expected @=? actual
     where
         label' = label ++ ": scrape (" ++ html ++ ")"
-        actual = scrape scraper (TagSoup.parseTags html)
+        actual = scrape scraper (HP.parseTokens html)

@@ -50,7 +50,7 @@ library
       ,   pointedlist
       ,   regex-base
       ,   regex-tdfa
-      ,   tagsoup       >= 0.12.2
+      ,   html-parse
       ,   text
       ,   vector
       ,   transformers

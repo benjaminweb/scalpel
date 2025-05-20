@@ -7,7 +7,6 @@ import Control.Monad (replicateM_)
 import Criterion.Main (bgroup, bench, defaultMain, nf)
 import Data.Foldable (foldr')
 import qualified Data.Text as T
-import qualified Text.HTML.TagSoup as TagSoup
 
 
 main :: IO ()
@@ -33,24 +32,24 @@ main = do
             ]
         ]
 
-makeNested :: Int -> [TagSoup.Tag T.Text]
-makeNested i = TagSoup.parseTags
+makeNested :: Int -> [HP.Tag]
+makeNested i = HP.parseTokens
              $ T.concat [T.replicate i open, one, T.replicate i close]
     where
         open  = T.pack "<tag>"
         close = T.pack "</tag>"
         one   = T.pack "1"
 
-sumListTags :: [TagSoup.Tag T.Text] -> Maybe Integer
+sumListTags :: [HP.Tag] -> Maybe Integer
 sumListTags testData = flip scrape testData
                      $ sum <$> chroots "tag" (return 1)
 
-manySelects :: Int -> [TagSoup.Tag T.Text] -> Maybe ()
+manySelects :: Int -> [HP.Tag] -> Maybe ()
 manySelects i testData = flip scrape testData
                        $ replicateM_ i
                        $ sum <$> chroots "tag" (return 1)
 
-manySelectNodes :: Int -> [TagSoup.Tag T.Text] -> Maybe T.Text
+manySelectNodes :: Int -> [HP.Tag] -> Maybe T.Text
 manySelectNodes i testData = flip scrape testData
                            $ text
                            $ foldr' (//) (tagSelector "tag")

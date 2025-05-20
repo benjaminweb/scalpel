@@ -6,8 +6,8 @@ Scalpel is a convenient web scraping library to extract data from HTML webpages.
 It's inspired by libraries like
 [Parsec](http://hackage.haskell.org/package/parsec-3.1.7/docs/Text-Parsec.html)
 and Perl's [Web::Scraper](http://search.cpan.org/~miyagawa/Web-Scraper-0.38/),
-and provides a declarative, monadic interface on top of the robust
-HTML parsing library [TagSoup](http://hackage.haskell.org/package/tagsoup)
+and provides a declarative, monadic interface on top of the efficient
+HTML parsing library [html-parse](https://hackage.haskell.org/package/html-parse)
 
 Quickstart
 ----------
