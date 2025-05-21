@@ -8,11 +8,13 @@ import Text.HTML.Scalpel.Core
 import Control.Applicative
 import Control.Monad (guard)
 import Data.List (isInfixOf)
+import Data.Text (Text)
 import System.Exit (ExitCode(..), exitSuccess, exitWith)
 import Test.HUnit (Test(..), (@=?), (~:), runTestTT, failures)
 
 import qualified Text.HTML.Parser as HP
 import qualified Text.Regex.TDFA
+import qualified Data.Text as T
 
 main :: IO ()
 main = do
@@ -23,7 +25,7 @@ exit :: Int -> IO ()
 exit 0 = exitSuccess
 exit n = exitWith $ ExitFailure n
 
-re :: String -> Text.Regex.TDFA.Regex
+re :: Text -> Text.Regex.TDFA.Regex
 re = Text.Regex.TDFA.makeRegex
 
 scrapeTests = "scrapeTests" ~: TestList [
@@ -297,7 +299,7 @@ scrapeTests = "scrapeTests" ~: TestList [
             (Just "<a>bar</a>")
             (chroot "a" $ do
                 t <- text anySelector
-                guard ("b" `isInfixOf` t)
+                guard ("b" `T.isInfixOf` t)
                 html anySelector)
 
     ,   scrapeTest
@@ -432,7 +434,7 @@ scrapeTests = "scrapeTests" ~: TestList [
     ,   scrapeTest
             "textSelector should select each text node"
             "1<a>2</a>3<b>4<c>5</c>6</b>7"
-            (Just $ map show [1..7])
+            (Just $ map (T.pack . show) [1..7])
             (texts textSelector)
 
     ,   scrapeTest
@@ -593,7 +595,7 @@ scrapeTests = "scrapeTests" ~: TestList [
 
     ,   scrapeTest
             "Issue #45 regression test"
-            (unlines [
+            (T.unlines [
               "<body>"
             , "  <h1>title1</h1>"
             , "  <h2>title2 1</h2>"
@@ -620,8 +622,8 @@ scrapeTests = "scrapeTests" ~: TestList [
     ]
 
 scrapeTest :: (Eq a, Show a)
-           => String -> String -> Maybe a -> Scraper String a -> Test
+           => Text -> Text -> Maybe a -> Scraper a -> Test
 scrapeTest label html expected scraper = label' ~: expected @=? actual
     where
-        label' = label ++ ": scrape (" ++ html ++ ")"
+        label' = T.unpack $ label <> ": scrape (" <> html <> ")"
         actual = scrape scraper (HP.parseTokens html)

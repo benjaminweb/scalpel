@@ -40,12 +40,12 @@ type Decoder str = HTTP.Response LBS.ByteString -> str
 
 -- | A record type that determines how 'scrapeURLWithConfig' interacts with the
 -- HTTP server and interprets the results.
-data Config str = Config {
-    decoder :: Decoder str
+data Config = Config {
+    decoder :: Decoder Text
 ,   manager :: Maybe HTTP.Manager
 }
 
-instance Default.Default (Config Text) where
+instance Default.Default Config where
     def = Config {
             decoder = defaultDecoder
         ,   manager = Nothing
@@ -57,21 +57,21 @@ instance Default.Default (Config Text) where
 -- The default behavior is to use the global manager provided by
 -- http-client-tls (via 'HTTP.getGlobalManager'). Any exceptions thrown by
 -- http-client are not caught and are bubbled up to the caller.
-scrapeURL :: URL -> Scraper Text.Text a -> IO (Maybe a)
+-- scrapeURL :: URL -> Scraper Text a -> IO (Maybe a)
 scrapeURL = scrapeURLWithConfig def
 
 -- | The 'scrapeURLWithConfig' function takes a 'Config' record type and
 -- downloads the contents of the given URL and executes a 'Scraper' on it.
-scrapeURLWithConfig :: Config Text.Text -> URL -> Scraper Text.Text a -> IO (Maybe a)
+--scrapeURLWithConfig :: Config -> URL -> _-> IO (Maybe a)
 scrapeURLWithConfig config url scraper = do
-    scrape scraper `liftM` fetchTagsWithConfig config url
+    (scrape scraper) `liftM` fetchTagsWithConfig config url
 
 -- | Download and parse the contents of the given URL.
 fetchTags :: URL -> IO [HP.Token]
 fetchTags = fetchTagsWithConfig def
 
 -- | Download and parse the contents of the given URL with the given 'Config'.
-fetchTagsWithConfig :: Config Text.Text -> URL -> IO [HP.Token]
+fetchTagsWithConfig :: Config -> URL -> IO [HP.Token]
 fetchTagsWithConfig config url = do
     manager <- maybe HTTP.getGlobalManager return (manager config)
     response <- flip HTTP.httpLbs manager =<< HTTP.parseRequest url
@@ -80,9 +80,8 @@ fetchTagsWithConfig config url = do
 -- | The default response decoder. This decoder attempts to infer the character
 -- set of the HTTP response body from the `Content-Type` header. If this header
 -- is not present, then the character set is assumed to be `ISO-8859-1`.
-defaultDecoder :: Decoder str
-defaultDecoder response = _
-                        $ choosenDecoder body
+defaultDecoder :: Decoder Text
+defaultDecoder response = choosenDecoder body
     where
         body        = HTTP.responseBody response
         headers     = HTTP.responseHeaders response
@@ -100,8 +99,8 @@ defaultDecoder response = _
 
 -- | A decoder that will always decode using `UTF-8`.
 utf8Decoder :: Decoder Text
-utf8Decoder = _ . Text.decodeUtf8 . LBS.toStrict . HTTP.responseBody
+utf8Decoder = Text.decodeUtf8 . LBS.toStrict . HTTP.responseBody
 
 -- | A decoder that will always decode using `ISO-8859-1`.
 iso88591Decoder :: Decoder Text
-iso88591Decoder = _ . Text.decodeLatin1 . LBS.toStrict . HTTP.responseBody
+iso88591Decoder = Text.decodeLatin1 . LBS.toStrict . HTTP.responseBody

@@ -67,7 +67,7 @@ infixl 6 `atDepth`
 -- another. For example, @"div" // "a"@ will create a 'Selector' that matches
 -- anchor tags that are nested arbitrarily deep within a div tag.
 (//) :: Selector -> Selector -> Selector
-(//) a b = MkSelector (as ++ bs)
+(//) a b = MkSelector (as <> bs)
     where (MkSelector as) = a
           (MkSelector bs) = b
 infixl 5 //

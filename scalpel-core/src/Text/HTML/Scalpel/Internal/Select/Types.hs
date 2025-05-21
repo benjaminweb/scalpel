@@ -23,6 +23,7 @@ module Text.HTML.Scalpel.Internal.Select.Types (
 import qualified Data.Text as T
 import Data.Text (Text)
 import qualified Text.HTML.Parser as HP
+import Data.String (IsString, fromString)
 
 -- | The 'AttributeName' type can be used when creating 'Selector's to specify
 -- the name of an attribute of a tag.
@@ -31,6 +32,9 @@ data AttributeName = AnyAttribute | AttributeString Text
 matchKey :: AttributeName -> Text -> Bool
 matchKey (AttributeString s) = (T.toLower s ==)
 matchKey AnyAttribute = const True
+
+instance IsString AttributeName where
+  fromString = AttributeString . T.pack
 
 -- | An 'AttributePredicate' is a method that takes a 'HP.Attr' and
 -- returns a 'Bool' indicating if the given attribute matches a predicate.
@@ -81,6 +85,9 @@ anySelector = MkSelector [(SelectAny [], defaultSelectSettings)]
 textSelector :: Selector
 textSelector = MkSelector [(SelectText, defaultSelectSettings)]
 
+instance IsString Selector where
+  fromString = tagSelector . T.pack
+
 data SelectNode = SelectNode !T.Text [AttributePredicate]
                 | SelectAny [AttributePredicate]
                 | SelectText
@@ -88,6 +95,9 @@ data SelectNode = SelectNode !T.Text [AttributePredicate]
 -- | The 'TagName' type is used when creating a 'Selector' to specify the name
 -- of a tag.
 data TagName = AnyTag | TagString Text
+
+instance IsString TagName where
+  fromString = TagString . T.pack
 
 toSelectNode :: TagName -> [AttributePredicate] -> SelectNode
 toSelectNode AnyTag = SelectAny

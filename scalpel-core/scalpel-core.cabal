@@ -70,8 +70,9 @@ test-suite lib-tests
       ,   base          >= 4.6 && < 5
       ,   regex-base
       ,   regex-tdfa
+      ,   text
       ,   scalpel-core
-      ,   tagsoup
+      ,   html-parse
   default-extensions:
           ParallelListComp
       ,   PatternGuards
@@ -86,6 +87,6 @@ benchmark bench
          base           >=4.7 && <5
       ,  criterion      >=1.1
       ,  scalpel-core
-      ,  tagsoup
+      ,  html-parse
       ,  text
   ghc-options: -Wall

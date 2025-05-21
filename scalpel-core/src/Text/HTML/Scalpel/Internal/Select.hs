@@ -141,7 +141,7 @@ tagsToVector tags = let indexed  = zip tags [0..]
                                   Just (index, info)
                               ,   calcOffset <$> maybeOpen
                               ]
-                 in res ++ go xs state'
+                 in res <> go xs state'
             | isTagOpen tag =
                 go xs (Map.alter appendTag tagName state)
             | otherwise =
