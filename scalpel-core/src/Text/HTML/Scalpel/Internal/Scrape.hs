@@ -27,6 +27,7 @@ module Text.HTML.Scalpel.Internal.Scrape (
 
 import Text.HTML.Scalpel.Internal.Select
 import Text.HTML.Scalpel.Internal.Select.Types
+import Debug.Trace
 
 import Control.Applicative
 import Control.Monad
@@ -177,7 +178,8 @@ innerHTMLs s = MkScraper $ withAll tagsToInnerHTML =<< reader (select s)
 -- every tag, use 'attrs'.
 attr :: (Monad m)
      => Text -> Selector -> ScraperT m Text
-attr name s = MkScraper $ ReaderT $ MaybeT
+attr name s -- | trace ("  foo baar " ++ show name) True = undefined
+            = MkScraper $ ReaderT $ MaybeT
               . return . listToMaybe . catMaybes
               . fmap (tagsToAttr name) . select s
 
@@ -260,7 +262,7 @@ tagsToAttr :: Text -> TagSpec -> Maybe Text
 tagsToAttr tagName (tags, _, _) = do
     guard $ 0 < Vector.length tags
     let tag = infoTag $ tags Vector.! 0
-    guard $ isTagOpen tag
+    guard $ (isTagOpen tag || isTagSelfClose tag)
     return $ fromAttrib tagName tag
 
 tagsToPosition :: TagSpec -> Int

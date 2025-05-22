@@ -11,6 +11,7 @@ module Text.HTML.Scalpel.Internal.Select (
 ,   tagsToSpec
 ,   fromAttrib
 ,   isTagOpen
+,   isTagSelfClose
 ) where
 
 import Text.HTML.Scalpel.Internal.Select.Types
@@ -129,9 +130,10 @@ tagsToVector tags = let indexed  = zip tags [0..]
                               $ concat
                               $ Map.elems state
             where
-                maybeName t | isTagOpen t  = Just $ getTagName t
-                            | isTagClose t = Just $ getTagName t
-                            | otherwise            = Nothing
+                maybeName t | isTagOpen t      = Just $ getTagName t
+                            | isTagSelfClose t = Just $ getTagName t
+                            | isTagClose t     = Just $ getTagName t
+                            | otherwise        = Nothing
         go ((tag, index) : xs) state
             | isTagClose tag =
                 let maybeOpen = Map.lookup tagName state >>= listToMaybe
@@ -142,7 +144,7 @@ tagsToVector tags = let indexed  = zip tags [0..]
                               ,   calcOffset <$> maybeOpen
                               ]
                  in res <> go xs state'
-            | isTagOpen tag =
+            | isTagOpen tag || isTagSelfClose tag =
                 go xs (Map.alter appendTag tagName state)
             | otherwise =
                 let info = TagInfo tag Nothing Nothing
@@ -165,9 +167,10 @@ tagsToVector tags = let indexed  = zip tags [0..]
                 popTag _                   = Nothing
 
 getTagName :: HP.Token -> Text
-getTagName (HP.TagOpen name _) = name
-getTagName (HP.TagClose name)  = name
-getTagName _                   = undefined
+getTagName (HP.TagOpen name _)      = name
+getTagName (HP.TagSelfClose name _) = name
+getTagName (HP.TagClose name)       = name
+getTagName _                        = undefined
 
 -- | Builds a forest describing the structure of the tags within a given vector.
 -- The nodes of the forest are tag spans which mark the indices within the
@@ -184,12 +187,13 @@ vectorToTree tags = fixup $ forestWithin 0 (Vector.length tags)
             | otherwise  = Tree.Node (Span lo closeIndex) subForest
                          : forestWithin (closeIndex + 1) hi
             where
-                info       = tags Vector.! lo
-                isOpen     = isTagOpen $ infoTag info
-                isText     = isTagText $ infoTag info
-                shouldSkip = not isOpen && not isText
-                closeIndex = lo + fromMaybe 0 (infoOffset info)
-                subForest  = forestWithin (lo + 1) closeIndex
+                info        = tags Vector.! lo
+                isOpen      = isTagOpen $ infoTag info
+                isText      = isTagText $ infoTag info
+                isSelfClose = isTagSelfClose $ infoTag info
+                shouldSkip  = not isOpen && not isText && not isSelfClose
+                closeIndex  = lo + fromMaybe 0 (infoOffset info)
+                subForest   = forestWithin (lo + 1) closeIndex
 
         -- Lifts nodes whose closing tags lay outside their parent tags up to
         -- within a parent node that encompasses the node's entire span.
@@ -343,7 +347,7 @@ checkSettings (SelectSettings _) _ _ = MatchOk
 checkTag :: T.Text -> [AttributePredicate] -> TagInfo -> MatchResult
 checkTag name preds (TagInfo tag tagName _)
       =  boolMatch (
-          isTagOpen tag
+          (isTagOpen tag || isTagSelfClose tag)
         && isJust tagName
         && name == fromJust tagName
       ) `andMatch` checkPreds preds tag
@@ -351,13 +355,19 @@ checkTag name preds (TagInfo tag tagName _)
 -- | Returns True if a tag satisfies a list of attribute predicates.
 checkPreds :: [AttributePredicate] -> HP.Token -> MatchResult
 checkPreds []    tag = boolMatch
-                     $ isTagOpen tag || isTagText tag
+                     $ isTagOpen tag || isTagSelfClose tag || isTagText tag
 checkPreds preds tag = boolMatch
-                     $ isTagOpen tag && all (`checkPred` attrs) preds
-    where (HP.TagOpen _ attrs) = tag
+                     $ (isTagOpen tag || isTagSelfClose tag) && all (`checkPred` attrs) preds
+    where attrs = case tag of
+                    (HP.TagOpen _ attrs) -> attrs
+                    (HP.TagSelfClose _ attrs) -> attrs
+                    _ -> []
 
 isTagOpen :: HP.Token -> Bool
 isTagOpen (HP.TagOpen _ _) = True; isTagOpen _ = False
+
+isTagSelfClose :: HP.Token -> Bool
+isTagSelfClose (HP.TagSelfClose _ _ ) = True; isTagSelfClose _ = False
 
 isTagClose :: HP.Token -> Bool
 isTagClose (HP.TagClose _) = True; isTagClose _ = False
@@ -370,6 +380,8 @@ fromAttrib att tag = fromMaybe T.empty $ maybeAttrib att tag
 
 maybeAttrib :: Text -> HP.Token -> Maybe HP.AttrValue
 maybeAttrib att (HP.TagOpen _ atts) = lookup att $ map unwrap atts
+  where unwrap (HP.Attr n v) = (n, v)
+maybeAttrib att (HP.TagSelfClose _ atts) = lookup att $ map unwrap atts
   where unwrap (HP.Attr n v) = (n, v)
 
 maybeAttrib _ x = error ("(" ++ show x ++ ") is not a TagOpen")

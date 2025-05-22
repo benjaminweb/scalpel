@@ -65,7 +65,7 @@ data SelectSettings = SelectSettings {
   -- | The required depth of the current select node in relation to the
   -- previously matched SelectNode.
   selectSettingsDepth :: Maybe Int
-}
+} deriving Show
 
 defaultSelectSettings :: SelectSettings
 defaultSelectSettings = SelectSettings {
